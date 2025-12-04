@@ -48,6 +48,7 @@ export const handleSlackEvent = async (req: Request, res: Response) => {
 const GITHUB_WEBHOOK_SECRET = process.env.GITHUB_WEBHOOK_SECRET!;
 
 export const handleGithubEvent = async (req: Request, res: Response) => {
+    console.log('hitted the github')
     console.log(req.body)
     const signature = req.headers['x-hub-signature-256'] as string;
     const hmac = crypto.createHmac('sha256', GITHUB_WEBHOOK_SECRET);
