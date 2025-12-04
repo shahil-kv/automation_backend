@@ -14,7 +14,7 @@ import {
     jiraApiClient
 } from '../services/jira.service';
 
-// Slack Service Imports
+// SlackK Service Imports
 import { postMessage, sendDirectMessageByEmail } from '../services/slack.service';
 
 // --- Slack Handler ---
