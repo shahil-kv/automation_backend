@@ -75,7 +75,7 @@ export const handleGithubEvent = async (req: Request, res: Response) => {
             await updateTicketStatus(jiraKey, 'Done');
             await addComment(jiraKey, `Pull request merged: ${payload.pull_request.html_url}`);
 
-            const supportChannelId = 'C07M7A45J4R'; // TODO: Move to .env
+            const supportChannelId = 'C0A1D39J9M3'; // TODO: Move to .env
             const ticketUrl = `https://${process.env.JIRA_HOST}/browse/${jiraKey}`;
             await postMessage(supportChannelId, `✅ Issue <${ticketUrl}|${jiraKey}> has been resolved.`);
         }
