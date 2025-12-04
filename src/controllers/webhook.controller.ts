@@ -145,7 +145,7 @@ export const handleJiraEvent = async (req: Request, res: Response) => {
                     try {
                         const currentIssue = await jiraApiClient.get(`/issue/${ticketKey}?fields=status`);
                         if (currentIssue.data.fields.status.name === ticketStatus) {
-                            const devChannelId = 'C0A1BMXT6TD'; // TODO: Movve to .env
+                            const devChannelId = 'C0A1BMXT6TD'; // TODO: Move to .env
                             const escalationText = `⚠️ **Blocker Escalation** ⚠️\nTicket <${ticketUrl}|${ticketKey}> is still in status *${ticketStatus}* 4 hours after a blocking comment from *${author}*.`;
                             await postMessage(devChannelId, escalationText);
                         }
