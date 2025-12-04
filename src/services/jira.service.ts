@@ -151,3 +151,31 @@ export async function getUserDetailsById(accountId: string): Promise<{ emailAddr
         throw new Error('Failed to fetch user details from Jira.');
     }
 }
+
+/**
+ * Searches for Jira issues using a text query.
+ * @param query The text to search for in the issue summary or description.
+ * @returns A list of found issues, limited to the top 3 most recently updated.
+ */
+export async function searchJiraIssues(query: string): Promise<{ key: string, fields: { summary: string } }[]> {
+    try {
+        // This JQL query searches for the query text in the summary and description,
+        // ordering by the most recently updated tickets first.
+        const jql = `(summary ~ "${query}" OR description ~ "${query}") ORDER BY updated DESC`;
+        
+        const response = await jiraApiClient.get('/search', {
+            params: {
+                jql: jql,
+                fields: 'summary', // Only fetch the fields we need
+                maxResults: 3, // Limit to the top 3 results to keep it focused
+            }
+        });
+
+        console.log(`Jira search for "${query}" found ${response.data.issues.length} issues.`);
+        return response.data.issues;
+
+    } catch (error: any) {
+        console.error(`Error searching Jira issues for query "${query}":`, error.response?.data?.errors || error.message);
+        throw new Error('Failed to search for issues in Jira.');
+    }
+}

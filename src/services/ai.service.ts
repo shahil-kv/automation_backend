@@ -64,43 +64,257 @@ const jsonGenerationConfig: GenerationConfig = {
 }
 
 
-/**
- * Analyzes a meeting transcript to detect scope changes related to a Jira ticket.
- * @param transcript - The full text of the meeting transcript.
- * @returns An object detailing the detected action, ticket key, reason, and confidence level.
- */
-export async function analyzeTranscript(transcript: string): Promise<{
-    action: 'pause' | 'delay' | 'cancel' | 'none';
-    ticketKey: string | null;
-    reason: string | null;
-    confidence: 'high' | 'medium' | 'low';
-}> {
-    const prompt = `
-        Analyze the following meeting transcript to determine if a decision was made to change the scope of a project or ticket.
-        The output must be a clean JSON object with no extra text or explanations.
-        The JSON object should have four keys: "action", "ticketKey", "reason", and "confidence".
 
-        - "action": Can be one of 'pause', 'delay', 'cancel', or 'none'.
-        - "ticketKey": The Jira ticket key (e.g., "PROJ-202") if mentioned. If no ticket is mentioned, this should be null.
-        - "reason": A brief explanation for the decision, extracted from the text.
-        - "confidence": Your confidence in this assessment ('high', 'medium', 'low'). Only return 'high' confidence if the decision is explicit (e.g., "we have decided to pause", "let's cancel this feature").
+
+
+/**
+
+
+ * Analyzes a meeting transcript to detect various intents (create, comment, pause) related to Jira tickets.
+
+
+ * @param transcript - The full text of the meeting transcript.
+
+
+ * @returns A structured object detailing the AI's determined intent and associated details.
+
+
+ */
+
+
+export async function analyzeTranscript(transcript: string): Promise<{
+
+
+    intent: 'CREATE_ISSUE' | 'ADD_COMMENT' | 'PAUSE_ISSUE' | 'NONE';
+
+
+    details: {
+
+
+        // For CREATE_ISSUE intent
+
+
+        summary?: string;
+
+
+        description?: string;
+
+
+        issueType?: 'Epic' | 'Feature' | 'Task'; // From user's valid issue types
+
+
+
+
+
+        // For ADD_COMMENT intent
+
+
+        searchQuery?: string; // To find an existing issue
+
+
+        comment?: string;
+
+
+
+
+
+        // For PAUSE_ISSUE intent
+
+
+        ticketKey?: string; // If mentioned explicitly
+
+
+        reason?: string;
+
+
+    };
+
+
+    confidence: 'high' | 'medium' | 'low';
+
+
+}> {
+
+
+    const prompt = `
+
+
+        Analyze the following meeting transcript to determine the primary intent regarding Jira tickets.
+
+
+        The output must be a clean JSON object with no extra text or explanations.
+
+
+        The JSON object should have an "intent", "details", and "confidence" key.
+
+
+
+
+
+        "intent": Determines the main action.
+
+
+            - "CREATE_ISSUE": If the discussion is clearly about a NEW feature, task, or epic that needs a new ticket.
+
+
+            - "ADD_COMMENT": If the discussion is about an EXISTING feature/task (even without a ticket ID) and a note needs to be added to it.
+
+
+            - "PAUSE_ISSUE": If the discussion explicitly indicates pausing, delaying, or canceling an EXISTING, identified (by ID) feature/task.
+
+
+            - "NONE": If no clear Jira-related action is implied.
+
+
+
+
+
+        "details": An object containing context-specific information based on the "intent".
+
+
+
+
+
+        "confidence": Your confidence in this assessment ('high', 'medium', 'low').
+
+
+
+
+
+        ---
+
+
+        Guidance for "intent" and "details":
+
+
+
+
+
+        If "intent" is "CREATE_ISSUE":
+
+
+            "details" must contain:
+
+
+            - "summary": A concise title for the new ticket.
+
+
+            - "description": A detailed description of the new request.
+
+
+            - "issueType": Choose from "Epic", "Feature", "Task". (Use "Feature" for new capabilities, "Task" for small fixes/updates, "Epic" for large goals).
+
+
+
+
+
+        If "intent" is "ADD_COMMENT":
+
+
+            "details" must contain:
+
+
+            - "searchQuery": A short phrase to search for the relevant existing Jira ticket (e.g., "dark mode feature", "login bug").
+
+
+            - "comment": The full comment text to add to the found ticket, summarizing the discussion.
+
+
+
+
+
+        If "intent" is "PAUSE_ISSUE":
+
+
+            "details" must contain:
+
+
+            - "ticketKey": The exact Jira ticket key (e.g., "KAN-123"). If a key is not explicitly mentioned, assume "ADD_COMMENT" intent instead.
+
+
+            - "reason": A brief explanation for pausing/delaying.
+
+
+
+
+
+        ---
+
 
         Here is the transcript:
+
+
         "${transcript}"
 
+
+
+
+
         JSON Output:
+
+
     `;
 
+
+
+
+
     try {
+
+
         const result = await model.generateContent({
+
+
             contents: [{ role: "user", parts: [{ text: prompt }] }],
-            generationConfig: { ...jsonGenerationConfig, temperature: 0.0 },
+
+
+            generationConfig: jsonGenerationConfig,
+
+
         });
+
+
         const response = result.response;
-        return JSON.parse(response.text());
+
+
+        const parsedResponse = JSON.parse(response.text());
+
+
+        
+
+
+        // Basic validation for the new structure
+
+
+        if (!parsedResponse.intent || !parsedResponse.confidence || !parsedResponse.details) {
+
+
+            throw new Error('Missing core fields in Gemini response for analyzeTranscript');
+
+
+        }
+
+
+
+
+
+        return parsedResponse;
+
+
+
+
 
     } catch (error) {
+
+
         console.error('Error calling Gemini SDK for transcript analysis:', error);
+
+
         throw new Error('Failed to analyze transcript with Gemini SDK.');
+
+
     }
+
+
 }
+
