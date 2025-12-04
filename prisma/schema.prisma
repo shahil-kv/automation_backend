@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id             Int      @id @default(autoincrement())
+  slackId        String   @unique
+  jiraEmail      String?
+  githubUsername String?
+  displayName    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Project {
+  id             Int      @id @default(autoincrement())
+  slackChannelId String   @unique
+  jiraProjectKey String
+  githubRepo     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Ticket {
+  id            Int      @id @default(autoincrement())
+  key           String   @unique // e.g. FE-101
+  summary       String
+  status        String   // e.g. "To Do", "In Progress", "Done"
+  slackThreadTs String?  // To reply in the same thread
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  action    String   // e.g. "TICKET_CREATED", "SCOPE_CHANGE_DETECTED"
+  details   String   // JSON string or text details
+  timestamp DateTime @default(now())
+}
